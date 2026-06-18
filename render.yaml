@@ -1,0 +1,22 @@
+# Render blueprint for the Mock WhatsApp Provider backend (runs as-is, stateful).
+# Persistent disk holds BOTH the SQLite DB and uploaded files so state survives restarts.
+# Note: persistent disks require a paid instance plan on Render.
+services:
+  - type: web
+    name: mock-whatsapp-backend
+    runtime: python
+    plan: starter            # paid tier required for the disk below
+    rootDir: backend
+    buildCommand: pip install -r ../requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: mock-storage
+      mountPath: /opt/render/project/src/backend/storage
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./storage/mock_trustsignal.db
+      - key: PUBLIC_BASE_URL
+        sync: false          # set to https://<your-backend-host> in the dashboard after first deploy
+      - key: ATS_WEBHOOK_URL
+        sync: false          # set to your ATS webhook endpoint (optional; events store+replay if unset)
