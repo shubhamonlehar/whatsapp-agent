@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://REPLACE_WITH_BACKEND_HOST/api/:path*" },
-    { "source": "/mock/:path*", "destination": "https://REPLACE_WITH_BACKEND_HOST/mock/:path*" },
-    { "source": "/files/:path*", "destination": "https://REPLACE_WITH_BACKEND_HOST/files/:path*" },
-    { "source": "/health", "destination": "https://REPLACE_WITH_BACKEND_HOST/health" }
+    { "source": "/api/:path*", "destination": "https://mock-whatsapp-backend.onrender.com/api/:path*" },
+    { "source": "/mock/:path*", "destination": "https://mock-whatsapp-backend.onrender.com/mock/:path*" },
+    { "source": "/files/:path*", "destination": "https://mock-whatsapp-backend.onrender.com/files/:path*" },
+    { "source": "/health", "destination": "https://mock-whatsapp-backend.onrender.com/health" }
   ]
 }
