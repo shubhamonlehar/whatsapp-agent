@@ -128,6 +128,10 @@ class ReplyIn(BaseModel):
     message_type: str = "text"
 
 
+class DeleteCandidatesIn(BaseModel):
+    ids: list[int] = Field(min_length=1)
+
+
 class StatusIn(BaseModel):
     status: str = Field(pattern="^(sent|delivered|read|failed|invalid_number)$")
 

@@ -198,6 +198,21 @@ def test_scenario_execution() -> None:
     assert any(event["webhook_type"] == "customer_response" for event in logs)
 
 
+def test_bulk_delete_removes_candidate_and_related_rows() -> None:
+    client.post("/api/v1/whatsapp/single?api_key=test-api-key", json=send_payload("919100000201"))
+    candidate = next(item for item in client.get("/mock/candidates").json() if item["phone"] == "919100000201")
+    client.post(f"/mock/candidates/{candidate['id']}/reply", json={"text": "YES"})
+
+    response = client.post("/mock/candidates/bulk-delete", json={"ids": [candidate["id"]]})
+    assert response.status_code == 200
+    assert response.json()["deleted"] == 1
+
+    phones = [item["phone"] for item in client.get("/mock/candidates").json()]
+    assert "919100000201" not in phones
+    detail = client.get(f"/mock/candidates/{candidate['id']}")
+    assert detail.status_code == 404
+
+
 def test_invalid_json_body() -> None:
     response = client.post(
         "/api/v1/whatsapp/single?api_key=test-api-key",

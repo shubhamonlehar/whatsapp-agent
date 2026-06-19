@@ -283,6 +283,28 @@ async def upload_candidate_file(
     return uploaded
 
 
+def delete_candidates(db: Session, ids: list[int]) -> int:
+    if not ids:
+        return 0
+    candidates = db.scalars(select(models.Candidate).where(models.Candidate.id.in_(ids))).all()
+    if not candidates:
+        return 0
+    found_ids = [c.id for c in candidates]
+    phones = [c.phone for c in candidates]
+    outbound_ids = [
+        m.id for m in db.scalars(select(models.OutboundMessage).where(models.OutboundMessage.to_phone.in_(phones)))
+    ]
+    db.query(models.WebhookEvent).filter(
+        models.WebhookEvent.candidate_id.in_(found_ids) | models.WebhookEvent.outbound_message_id.in_(outbound_ids)
+    ).delete(synchronize_session=False)
+    db.query(models.OutboundMessage).filter(models.OutboundMessage.to_phone.in_(phones)).delete(synchronize_session=False)
+    db.query(models.InboundMessage).filter(models.InboundMessage.candidate_id.in_(found_ids)).delete(synchronize_session=False)
+    db.query(models.UploadedFile).filter(models.UploadedFile.candidate_id.in_(found_ids)).delete(synchronize_session=False)
+    db.query(models.Candidate).filter(models.Candidate.id.in_(found_ids)).delete(synchronize_session=False)
+    db.commit()
+    return len(found_ids)
+
+
 async def replay_webhook(db: Session, event_id: int) -> models.WebhookEvent:
     event = WebhookRepository(db).get(event_id)
     if event is None:

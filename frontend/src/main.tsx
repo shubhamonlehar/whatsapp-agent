@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Send,
   Settings as SettingsIcon,
+  Trash2,
   Upload,
   Users,
   Webhook,
@@ -281,16 +282,62 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function Candidates() {
   const { data, refetch } = useApi<Candidate[]>('/mock/candidates');
+  const [selected, setSelected] = React.useState<number[]>([]);
+  const candidates = data || [];
+  const allIds = candidates.map((candidate) => candidate.id);
+  const allSelected = allIds.length > 0 && selected.length === allIds.length;
+
+  const toggle = (id: number) =>
+    setSelected((current) => (current.includes(id) ? current.filter((value) => value !== id) : [...current, id]));
+  const toggleAll = () => setSelected(allSelected ? [] : allIds);
+
   const action = async (candidate: Candidate, text: string) => {
     await api(`/mock/candidates/${candidate.id}/reply`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
     refetch();
   };
+  const deleteSelected = async () => {
+    if (!selected.length) return;
+    if (!window.confirm(`Delete ${selected.length} candidate(s)? This also removes their messages, uploads, and webhook events.`)) return;
+    await api('/mock/candidates/bulk-delete', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ids: selected })
+    });
+    setSelected([]);
+    refetch();
+  };
+
+  const selectAllBox = (
+    <input type="checkbox" aria-label="Select all candidates" checked={allSelected} onChange={toggleAll} className="h-4 w-4 cursor-pointer accent-mint" />
+  );
+
   return (
     <section className="space-y-4">
       <PageHeader title="Candidates" onRefresh={() => refetch()} />
-      <Table headers={['Phone', 'Name', 'Current Status', 'Last Activity', 'CV Received', 'Actions']}>
-        {(data || []).map((candidate) => (
-          <tr key={candidate.id}>
+      {selected.length > 0 && (
+        <div className="flex items-center justify-between rounded-md border border-line bg-white px-4 py-2 shadow-soft">
+          <span className="text-sm text-slate-600">{selected.length} selected</span>
+          <button
+            type="button"
+            onClick={deleteSelected}
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+          >
+            <Trash2 size={15} />Delete {selected.length}
+          </button>
+        </div>
+      )}
+      <Table headers={[selectAllBox, 'Phone', 'Name', 'Current Status', 'Last Activity', 'CV Received', 'Actions']}>
+        {candidates.map((candidate) => (
+          <tr key={candidate.id} className={selected.includes(candidate.id) ? 'bg-emerald-50/60' : undefined}>
+            <td>
+              <input
+                type="checkbox"
+                aria-label={`Select ${candidate.phone}`}
+                checked={selected.includes(candidate.id)}
+                onChange={() => toggle(candidate.id)}
+                className="h-4 w-4 cursor-pointer accent-mint"
+              />
+            </td>
             <td><Link className="font-medium text-mint" to={`/candidates/${candidate.id}`}>{candidate.phone}</Link></td>
             <td>{candidate.name}</td>
             <td><Badge value={candidate.current_status} /></td>
@@ -675,12 +722,12 @@ function Settings() {
   );
 }
 
-function Table({ headers, children }: { headers: string[]; children: React.ReactNode }) {
+function Table({ headers, children }: { headers: React.ReactNode[]; children: React.ReactNode }) {
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-white shadow-soft">
       <table className="w-full text-left text-sm">
         <thead className="bg-panel text-xs uppercase text-slate-600">
-          <tr>{headers.map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
+          <tr>{headers.map((h, i) => <th key={i} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-line">{children}</tbody>
       </table>

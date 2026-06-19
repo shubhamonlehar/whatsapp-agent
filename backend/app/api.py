@@ -15,6 +15,7 @@ from app.auth import check_credentials, create_token
 from app.schemas import (
     CandidateOut,
     DashboardOut,
+    DeleteCandidatesIn,
     LoginIn,
     ReplyIn,
     ScenarioIn,
@@ -25,7 +26,7 @@ from app.schemas import (
     UploadedFileOut,
     WebhookEventOut,
 )
-from app.services import dashboard, record_bulk, record_send, replay_webhook, simulate_reply, upload_candidate_file, validate_request
+from app.services import dashboard, delete_candidates, record_bulk, record_send, replay_webhook, simulate_reply, upload_candidate_file, validate_request
 from app.settings_store import get_runtime_settings, patch_runtime_settings
 from app.time_utils import india_isoformat
 from app.trustsignal import success_bulk, success_indicator, success_single, trustsignal_error
@@ -172,6 +173,12 @@ def mock_messages(db: Session = Depends(get_db)) -> list[models.OutboundMessage]
 @router.get("/mock/candidates", response_model=list[CandidateOut])
 def mock_candidates(db: Session = Depends(get_db)) -> list[models.Candidate]:
     return CandidateRepository(db).list()
+
+
+@router.post("/mock/candidates/bulk-delete")
+def mock_delete_candidates(body: DeleteCandidatesIn, db: Session = Depends(get_db)) -> dict[str, Any]:
+    deleted = delete_candidates(db, body.ids)
+    return {"success": True, "deleted": deleted}
 
 
 @router.get("/mock/candidates/{candidate_id}")
