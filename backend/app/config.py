@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = ""
     auth_secret: str = ""
+    llm_api_base_url: str = "https://mock-llm-api-6env.onrender.com"
+    llm_proxy_key: str = ""
     auto_seed: bool = True
     log_level: str = "INFO"
 

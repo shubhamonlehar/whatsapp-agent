@@ -213,6 +213,19 @@ def test_bulk_delete_removes_candidate_and_related_rows() -> None:
     assert detail.status_code == 404
 
 
+def test_llm_clear_cache_requires_proxy_key_config() -> None:
+    # No LLM_PROXY_KEY configured in tests, so the route short-circuits before any network call.
+    response = client.post("/mock/llm/clear-cache")
+    assert response.status_code == 400
+    assert response.json()["errors"][0]["codeMsg"] == "LLM_KEY_MISSING"
+
+
+def test_llm_actions_require_admin_token() -> None:
+    anon = TestClient(app)
+    assert anon.post("/mock/llm/clear-cache").status_code == 401
+    assert anon.get("/mock/llm/export-cache").status_code == 401
+
+
 def test_invalid_json_body() -> None:
     response = client.post(
         "/api/v1/whatsapp/single?api_key=test-api-key",

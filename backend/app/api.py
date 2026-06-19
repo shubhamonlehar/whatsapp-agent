@@ -12,6 +12,7 @@ from app import models
 from app.db import get_db
 from app.repositories import CandidateRepository, MessageRepository, ScenarioRepository, WebhookRepository
 from app.auth import check_credentials, create_token
+from app.config import get_settings
 from app.schemas import (
     CandidateOut,
     DashboardOut,
@@ -280,6 +281,34 @@ def mock_get_settings(db: Session = Depends(get_db)) -> dict[str, Any]:
 @router.patch("/mock/settings")
 def mock_patch_settings(patch: SettingsPatch, db: Session = Depends(get_db)) -> dict[str, Any]:
     return patch_runtime_settings(db, patch.model_dump(exclude_none=True))
+
+
+async def _call_llm_admin(method: str, path: str) -> dict[str, Any]:
+    settings = get_settings()
+    base = str(settings.llm_api_base_url or "").rstrip("/")
+    if not base:
+        raise trustsignal_error("400", "LLM_API_NOT_CONFIGURED", "LLM_API_BASE_URL is not configured")
+    if not settings.llm_proxy_key:
+        raise trustsignal_error("400", "LLM_KEY_MISSING", "LLM_PROXY_KEY is not configured on the server")
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.request(method, f"{base}{path}", headers={"x-proxy-key": settings.llm_proxy_key})
+    except httpx.HTTPError as exc:
+        raise trustsignal_error("502", "LLM_UNREACHABLE", f"Could not reach LLM API: {exc}", 502)
+    if response.status_code >= 400:
+        raise trustsignal_error(str(response.status_code), "LLM_API_ERROR", f"LLM API error: {response.text[:200]}", 502)
+    return response.json()
+
+
+@router.post("/mock/llm/clear-cache")
+async def llm_clear_cache() -> dict[str, Any]:
+    data = await _call_llm_admin("DELETE", "/admin/fixtures")
+    return {"success": True, **data}
+
+
+@router.get("/mock/llm/export-cache")
+async def llm_export_cache() -> dict[str, Any]:
+    return await _call_llm_admin("GET", "/admin/export")
 
 
 @router.post("/mock/settings/test-ats-connection")

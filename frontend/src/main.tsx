@@ -6,6 +6,7 @@ import {
   Activity,
   CheckCheck,
   Clock,
+  Download,
   FileText,
   FileUp,
   Gauge,
@@ -197,6 +198,84 @@ function Shell() {
   );
 }
 
+function parseError(error: unknown): string {
+  const raw = (error as { message?: string })?.message || 'Request failed';
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.errors?.[0]?.message || raw;
+  } catch {
+    return raw;
+  }
+}
+
+function LlmActions() {
+  const [busy, setBusy] = React.useState<'' | 'clear' | 'download'>('');
+  const [message, setMessage] = React.useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
+
+  const clearCache = async () => {
+    if (!window.confirm('Clear the LLM fixture cache? This deletes all recorded fixtures.')) return;
+    setBusy('clear');
+    setMessage(null);
+    try {
+      const data = await api<{ deleted_count?: number }>('/mock/llm/clear-cache', { method: 'POST' });
+      setMessage({ tone: 'ok', text: `Cache cleared — ${data.deleted_count ?? 0} fixture(s) deleted.` });
+    } catch (error) {
+      setMessage({ tone: 'err', text: parseError(error) });
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const downloadCache = async () => {
+    setBusy('download');
+    setMessage(null);
+    try {
+      const data = await api<{ count?: number }>('/mock/llm/export-cache');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'fixtures.json';
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage({ tone: 'ok', text: `Downloaded ${data.count ?? 0} fixture(s) as fixtures.json.` });
+    } catch (error) {
+      setMessage({ tone: 'err', text: parseError(error) });
+    } finally {
+      setBusy('');
+    }
+  };
+
+  return (
+    <Panel title="LLM Actions">
+      <p className="mb-3 text-sm text-slate-600">Manage the mock LLM fixture cache.</p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={clearCache}
+          disabled={busy !== ''}
+          className="inline-flex h-9 items-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
+        >
+          <Trash2 size={15} />{busy === 'clear' ? 'Clearing…' : 'Clear Cache'}
+        </button>
+        <button
+          type="button"
+          onClick={downloadCache}
+          disabled={busy !== ''}
+          className="inline-flex h-9 items-center gap-2 rounded-md bg-mint px-3 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-60"
+        >
+          <Download size={15} />{busy === 'download' ? 'Downloading…' : 'Download Cache'}
+        </button>
+      </div>
+      {message && (
+        <div className={`mt-3 rounded-md px-3 py-2 text-xs font-medium ${message.tone === 'ok' ? 'bg-emerald-50 text-mint' : 'bg-red-50 text-coral'}`}>
+          {message.text}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function Metric({ label, value, icon: Icon }: { label: string; value: number; icon: React.ComponentType<{ size?: number; className?: string }> }) {
   return (
     <div className="rounded-lg border border-line bg-white p-4 shadow-soft">
@@ -254,6 +333,7 @@ function Dashboard() {
           </div>
         </Panel>
       </div>
+      <LlmActions />
     </section>
   );
 }
