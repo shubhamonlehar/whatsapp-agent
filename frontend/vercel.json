@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
+    { "source": "/auth/:path*", "destination": "https://mock-whatsapp-backend.onrender.com/auth/:path*" },
     { "source": "/api/:path*", "destination": "https://mock-whatsapp-backend.onrender.com/api/:path*" },
     { "source": "/mock/:path*", "destination": "https://mock-whatsapp-backend.onrender.com/mock/:path*" },
     { "source": "/files/:path*", "destination": "https://mock-whatsapp-backend.onrender.com/files/:path*" },
