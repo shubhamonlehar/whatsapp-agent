@@ -181,6 +181,7 @@ function Shell() {
               {label}
             </NavLink>
           ))}
+          <LlmActions />
         </aside>
         <main>
           <Routes>
@@ -247,14 +248,14 @@ function LlmActions() {
   };
 
   return (
-    <Panel title="LLM Actions">
-      <p className="mb-3 text-sm text-slate-600">Manage the mock LLM fixture cache.</p>
-      <div className="flex flex-wrap gap-2">
+    <div className="mt-4 rounded-lg border border-line bg-white p-3 shadow-soft">
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">LLM Actions</h2>
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={clearCache}
           disabled={busy !== ''}
-          className="inline-flex h-9 items-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
         >
           <Trash2 size={15} />{busy === 'clear' ? 'Clearing…' : 'Clear Cache'}
         </button>
@@ -262,17 +263,17 @@ function LlmActions() {
           type="button"
           onClick={downloadCache}
           disabled={busy !== ''}
-          className="inline-flex h-9 items-center gap-2 rounded-md bg-mint px-3 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-60"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-mint px-3 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-60"
         >
           <Download size={15} />{busy === 'download' ? 'Downloading…' : 'Download Cache'}
         </button>
       </div>
       {message && (
-        <div className={`mt-3 rounded-md px-3 py-2 text-xs font-medium ${message.tone === 'ok' ? 'bg-emerald-50 text-mint' : 'bg-red-50 text-coral'}`}>
+        <div className={`mt-2 rounded-md px-3 py-2 text-xs font-medium ${message.tone === 'ok' ? 'bg-emerald-50 text-mint' : 'bg-red-50 text-coral'}`}>
           {message.text}
         </div>
       )}
-    </Panel>
+    </div>
   );
 }
 
@@ -333,7 +334,6 @@ function Dashboard() {
           </div>
         </Panel>
       </div>
-      <LlmActions />
     </section>
   );
 }
