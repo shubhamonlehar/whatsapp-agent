@@ -28,6 +28,7 @@ TEMPLATE_MAPPINGS: dict[str, TemplateMapping] = {
     },
     "candidate_cv_reqquest_18bva1mbdlo8c907": {
         "name": "candidate_cv_request",
+        "label": "Candidate CV Request Template",
         "type": "text",
         "content": {
             "body": {
@@ -79,7 +80,12 @@ def render_template(template_id: Any, sample: Any) -> str | None:
         return None
 
     replacements = _template_replacements(text, sample)
-    return _PLACEHOLDER_PATTERN.sub(lambda match: replacements.get(match.group(1), match.group(0)), text)
+    rendered = _PLACEHOLDER_PATTERN.sub(lambda match: replacements.get(match.group(1), match.group(0)), text)
+
+    label = str(mapping.get("label") or "").strip()
+    if label:
+        return f"{label} : {rendered}"
+    return rendered
 
 
 def _template_replacements(text: str, sample: Any) -> dict[str, str]:
