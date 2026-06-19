@@ -11,9 +11,11 @@ from sqlalchemy.orm import Session
 from app import models
 from app.db import get_db
 from app.repositories import CandidateRepository, MessageRepository, ScenarioRepository, WebhookRepository
+from app.auth import check_credentials, create_token
 from app.schemas import (
     CandidateOut,
     DashboardOut,
+    LoginIn,
     ReplyIn,
     ScenarioIn,
     ScenarioOut,
@@ -74,6 +76,13 @@ def public_settings(settings: dict[str, Any]) -> dict[str, Any]:
 @router.get("/health")
 def health(db: Session = Depends(get_db)) -> dict[str, Any]:
     return {"status": "ok", "provider": "mock-trustsignal-whatsapp", "settings": public_settings(get_runtime_settings(db))}
+
+
+@router.post("/auth/login")
+def login(body: LoginIn) -> dict[str, Any]:
+    if not check_credentials(body.username, body.password):
+        raise trustsignal_error("401", "INVALID_CREDENTIALS", "Invalid username or password", 401)
+    return {"success": True, "token": create_token(body.username), "username": body.username}
 
 
 @router.post("/api/v1/whatsapp/single")

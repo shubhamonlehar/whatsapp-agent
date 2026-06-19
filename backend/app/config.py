@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     ats_webhook_retry_interval_ms: int = 5000
     ats_webhook_auth_header: str = ""
     ats_webhook_auth_token: str = ""
+    admin_username: str = "admin"
+    admin_password: str = ""
+    auth_secret: str = ""
     auto_seed: bool = True
     log_level: str = "INFO"
 

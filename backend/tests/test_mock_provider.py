@@ -13,6 +13,7 @@ os.environ["ATS_WEBHOOK_ENABLED"] = "false"
 os.environ["STRICT_API_KEY"] = "true"
 os.environ["VALID_API_KEYS"] = "test-api-key"
 os.environ["VALID_SENDERS"] = "9810330589"
+os.environ["ADMIN_PASSWORD"] = "test-admin-pass"
 os.environ["DATABASE_URL"] = "sqlite:///./test_mock_trustsignal.db"
 
 test_db = ROOT / "test_mock_trustsignal.db"
@@ -30,6 +31,11 @@ Base.metadata.create_all(bind=engine)
 
 client = TestClient(app)
 
+# The /mock/* control surface now requires an admin bearer token. Authenticate once
+# and attach the token to every request this client makes.
+_token = client.post("/auth/login", json={"username": "admin", "password": "test-admin-pass"}).json()["token"]
+client.headers.update({"Authorization": f"Bearer {_token}"})
+
 
 def send_payload(to: str = "919100000001") -> dict[str, str]:
     return {"sender": "9810330589", "to": to, "template_id": "cv_request"}
@@ -45,6 +51,19 @@ def test_webhook_auth_headers_does_not_double_prefix_bearer() -> None:
         {"ats_webhook_auth_header": "Authorization", "ats_webhook_auth_token": "Bearer secret-token"}
     )
     assert headers == {"Authorization": "Bearer secret-token"}
+
+
+def test_mock_surface_requires_admin_token() -> None:
+    anon = TestClient(app)
+    assert anon.get("/mock/dashboard").status_code == 401
+
+
+def test_login_issues_token_and_rejects_bad_credentials() -> None:
+    bad = client.post("/auth/login", json={"username": "admin", "password": "wrong"})
+    assert bad.status_code == 401
+    good = client.post("/auth/login", json={"username": "admin", "password": "test-admin-pass"})
+    assert good.status_code == 200
+    assert good.json()["token"]
 
 
 def test_message_send_generates_trustsignal_response_and_webhook() -> None:

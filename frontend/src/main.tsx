@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { BrowserRouter, Link, NavLink, Route, Routes, useParams } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Activity,
   CheckCheck,
@@ -75,8 +75,36 @@ type Uploaded = {
   created_at: string;
 };
 
+const TOKEN_KEY = 'wa_admin_token';
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || '';
+}
+
+function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+function authHeaders(extra?: HeadersInit): HeadersInit {
+  const token = getToken();
+  return { ...(extra || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+}
+
+function handleUnauthorized() {
+  clearToken();
+  if (window.location.pathname !== '/login') window.location.assign('/login');
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, init);
+  const response = await fetch(path, { ...init, headers: authHeaders(init?.headers) });
+  if (response.status === 401) {
+    handleUnauthorized();
+    throw new Error('Unauthorized');
+  }
   if (!response.ok) throw new Error(await response.text());
   return response.json();
 }
@@ -131,7 +159,16 @@ function Shell() {
             <div className="text-sm font-semibold uppercase tracking-wide">Mock WhatsApp Provider</div>
             <div className="text-xs text-[#cfe4d9]">Not connected to real WhatsApp</div>
           </div>
-          <div className="rounded-md bg-white/10 px-3 py-1 text-xs">TrustSignal-compatible</div>
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-white/10 px-3 py-1 text-xs">TrustSignal-compatible</div>
+            <button
+              type="button"
+              onClick={() => { clearToken(); window.location.assign('/login'); }}
+              className="rounded-md bg-white/10 px-3 py-1 text-xs font-medium hover:bg-white/20"
+            >
+              Log out
+            </button>
+          </div>
         </div>
       </div>
       <div className="mx-auto grid max-w-7xl grid-cols-[220px_1fr] gap-6 px-5 py-6">
@@ -293,7 +330,7 @@ function CandidateChat() {
   const uploadMock = async (name: string, type: string, bytes: string, invalid = false) => {
     const form = new FormData();
     form.append('file', new File([bytes], name, { type }));
-    await fetch(`/mock/candidates/${id}/upload-cv?invalid=${invalid}`, { method: 'POST', body: form });
+    await fetch(`/mock/candidates/${id}/upload-cv?invalid=${invalid}`, { method: 'POST', body: form, headers: authHeaders() });
     refetch();
   };
   const uploadLocalFiles = async (files: FileList | null) => {
@@ -303,7 +340,7 @@ function CandidateChat() {
       for (const file of Array.from(files)) {
         const form = new FormData();
         form.append('file', file);
-        await fetch(`/mock/candidates/${id}/upload-cv`, { method: 'POST', body: form });
+        await fetch(`/mock/candidates/${id}/upload-cv`, { method: 'POST', body: form, headers: authHeaders() });
       }
       await refetch();
     } finally {
@@ -483,7 +520,7 @@ function CandidateDetail() {
   const upload = async (name: string, type: string, bytes: string, invalid = false) => {
     const form = new FormData();
     form.append('file', new File([bytes], name, { type }));
-    await fetch(`/mock/candidates/${id}/upload-cv?invalid=${invalid}`, { method: 'POST', body: form });
+    await fetch(`/mock/candidates/${id}/upload-cv?invalid=${invalid}`, { method: 'POST', body: form, headers: authHeaders() });
     refetch();
   };
   return (
@@ -683,11 +720,74 @@ function PayloadButton({ label, payload }: { label: string; payload: string }) {
   );
 }
 
+function Login() {
+  const navigate = useNavigate();
+  const [username, setUsername] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const response = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (!response.ok) {
+        setError('Invalid username or password');
+        return;
+      }
+      const data = await response.json();
+      setToken(data.token);
+      navigate('/');
+    } catch {
+      setError('Could not reach the server');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#edf2ef] px-5 text-ink">
+      <div className="w-full max-w-sm rounded-lg border border-line bg-white p-6 shadow-soft">
+        <div className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#1f342b]">Mock WhatsApp Provider</div>
+        <div className="mb-5 text-xs text-slate-500">Admin sign in</div>
+        <form onSubmit={submit} className="space-y-3">
+          <label className="block text-sm font-medium">
+            Username
+            <input autoFocus value={username} onChange={(e) => setUsername(e.target.value)} className="field mt-1 w-full" />
+          </label>
+          <label className="block text-sm font-medium">
+            Password
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="field mt-1 w-full" />
+          </label>
+          {error && <div className="rounded-md bg-red-50 px-3 py-2 text-xs font-medium text-coral">{error}</div>}
+          <button disabled={busy} className="w-full rounded-md bg-mint px-4 py-2 font-medium text-white disabled:opacity-60">
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Root() {
+  const location = useLocation();
+  const token = getToken();
+  if (location.pathname === '/login') {
+    return token ? <Navigate to="/" replace /> : <Login />;
+  }
+  if (!token) return <Navigate to="/login" replace />;
+  return <Shell />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={client}>
       <BrowserRouter>
-        <Shell />
+        <Root />
       </BrowserRouter>
     </QueryClientProvider>
   );

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import router
+from app.auth import bearer_token, verify_token
 from app.config import get_settings
 from app.db import Base, SessionLocal, engine
 from app.seed_data import seed_if_empty
@@ -32,6 +33,22 @@ def create_app() -> FastAPI:
     )
     Path("storage/uploads").mkdir(parents=True, exist_ok=True)
     app.mount("/files", StaticFiles(directory="storage/uploads"), name="files")
+
+    @app.middleware("http")
+    async def admin_guard(request: Request, call_next):
+        # Gate only the dashboard control surface. The TrustSignal /api/v1/* endpoints,
+        # /health, /files, /auth/login, and CORS preflight stay open.
+        if request.method != "OPTIONS" and request.url.path.startswith("/mock"):
+            if not verify_token(bearer_token(request.headers.get("authorization"))):
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "errors": [{"code": "401", "codeMsg": "UNAUTHORIZED", "message": "Admin login required"}],
+                        "success": False,
+                    },
+                )
+        return await call_next(request)
+
     app.include_router(router)
 
     @app.on_event("startup")

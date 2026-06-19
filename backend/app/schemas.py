@@ -118,6 +118,11 @@ class ScenarioOut(ScenarioIn):
     created_at: datetime
 
 
+class LoginIn(BaseModel):
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+
+
 class ReplyIn(BaseModel):
     text: str = Field(default="YES", min_length=1)
     message_type: str = "text"
