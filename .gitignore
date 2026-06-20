@@ -26,3 +26,7 @@ frontend/dist/
 .DS_Store
 .idea/
 .vscode/
+
+
+# templates
+new temp.xlsx
