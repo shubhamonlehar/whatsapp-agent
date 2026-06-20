@@ -1,69 +1,149 @@
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 
-TemplateMapping = dict[str, Any]
+class QuickReplyButton(TypedDict):
+    type: str
+    text: str
 
 
-INTERVIEW_REMINDER_NEW: TemplateMapping = {
-    "name": "interview_reminder_new",
-    "type": "text",
-    "content": {
-        "body": {
-            "text": "Hi {{1}}, a quick reminder - your interview for {{2}} at {{3}} starts in 30 minutes."
-        }
-    },
-}
+class TemplateButtons(TypedDict):
+    buttons: list[QuickReplyButton]
+
+
+class TemplateBody(TypedDict):
+    text: str
+
+
+class TemplateContent(TypedDict, total=False):
+    body: TemplateBody
+    buttons: TemplateButtons
+
+
+class TemplateMapping(TypedDict, total=False):
+    name: str
+    type: str
+    content: TemplateContent
+    route: str
+    status: str
+    waba_id: str
+    quality: str
+    created_at: str
 
 
 TEMPLATE_MAPPINGS: dict[str, TemplateMapping] = {
-    "candidate_missed_dngfcr2aguu2nnh2": {
-        "name": "candidate_missed",
+    "duplicate_candidate_agrees_gf9kqftzvwi62zvw": {
+        "name": "duplicate_candidate_agrees",
         "type": "text",
         "content": {
             "body": {
-                "text": "Hi {{1}}, this is {{2}} from {{3}}. We just tried calling you about your application."
-            }
+                "text": "Great, thanks {{1}}!\r\nJust a few quick questions to see if this opportunity could be a good match for you.\r\nLet's start with your notice period. How about sharing below information?"
+            },
+            "buttons": {
+                "buttons": [
+                    {"type": "QUICK_REPLY", "text": "Immediate Joiner"},
+                    {"type": "QUICK_REPLY", "text": "Less than 15 days"},
+                    {"type": "QUICK_REPLY", "text": "Within a month"},
+                    {"type": "QUICK_REPLY", "text": "More than a month"},
+                ]
+            },
         },
+        "route": "promotional",
+        "status": "APPROVED",
+        "waba_id": "1007707438414877",
+        "quality": "high",
+        "created_at": "2026-06-19 22:03:20.243000",
     },
-    "candidate_cv_reqquest_18bva1mbdlo8c907": {
-        "name": "candidate_cv_request",
-        "label": "Candidate CV Request Template",
+    "duplicate_notice_period_mcq_se6thv81qivs3rt2": {
+        "name": "can_relocate",
         "type": "text",
         "content": {
-            "body": {
-                "text": "Hi {{1}}, thanks for your interest in the {{2}} role at {{3}}."
-            }
+            "body": {"text": "Are you willing to relocate (if required)?"},
+            "buttons": {
+                "buttons": [
+                    {"type": "QUICK_REPLY", "text": "Of course"},
+                    {"type": "QUICK_REPLY", "text": "May be not"},
+                ]
+            },
         },
+        "route": "transactional",
+        "status": "APPROVED",
+        "waba_id": "1007707438414877",
+        "quality": "high",
+        "created_at": "2026-06-19 21:22:06.254000",
     },
-    "interview_confirmation_cxrn27hlbuhveryj": {
-        "name": "interview_confirmation",
+    "duplicate_if_candidate_selects_not_interested_ddqhlau8q9d3q54l": {
+        "name": "duplicate_if_candidate_selects_\"not_interested\"",
         "type": "text",
         "content": {
             "body": {
-                "text": "Interview Confirmation: Hi {{1}}, your interview for {{2}} at {{3}} is confirmed on {{4}}."
+                "text": "No problem, {{1}}.\r\nThank you for your response. We'll make a note of your preference and won't bother you regarding this opportunity.\r\nWishing you all the very best in your career journey."
             }
         },
+        "route": "promotional",
+        "status": "APPROVED",
+        "waba_id": "1007707438414877",
+        "quality": "UNKNOWN",
+        "created_at": "2026-06-18 18:07:42.234000",
     },
-    "duplicate_interview_reminder_yeaygobldbv2m1z": INTERVIEW_REMINDER_NEW,
-    "duplicate_interview_reminder_yeaygobldbvb2m1z": INTERVIEW_REMINDER_NEW,
-    "interview_reminder_yeaygobldbv2m1z": {
-        "name": "interview_reminder",
+    "final_thankyou_message_2yzoyjaoczl5p2i0": {
+        "name": "final_thank-you_message",
         "type": "text",
         "content": {
             "body": {
-                "text": "Hi {{name}}, a quick reminder - your interview for {{role}} at {{company}} starts in 30 minutes."
+                "text": "Thank you for sharing the details, {{1}}.\r\nOur team will review your profile along with your responses and get back to you if there is a potential fit.\r\nWe appreciate your time and interest. Have a great day!"
             }
         },
+        "route": "transactional",
+        "status": "APPROVED",
+        "waba_id": "1007707438414877",
+        "quality": "high",
+        "created_at": "2026-06-18 17:21:33.762000",
     },
-    "candidate_interview_confirmation_pada83q0zjxxvko0": {
-        "name": "candidate_interview_confirmation",
+    "expected_ctc_58xkmskwwotjakna": {
+        "name": "expected_ctc",
+        "type": "text",
+        "content": {
+            "body": {"text": "What would be your expected CTC for your next move?\r\nExample: ₹24 LPA"}
+        },
+        "route": "promotional",
+        "status": "APPROVED",
+        "waba_id": "1007707438414877",
+        "quality": "high",
+        "created_at": "2026-06-18 17:09:35.505000",
+    },
+    "current_ctc_e9a89qk8qptpa58q": {
+        "name": "current_ctc",
+        "type": "text",
+        "content": {
+            "body": {"text": "What is your current CTC?\r\n(Approximate figure is perfectly fine.)\r\nExample: ₹18 LPA"}
+        },
+        "route": "transactional",
+        "status": "APPROVED",
+        "waba_id": "1007707438414877",
+        "quality": "high",
+        "created_at": "2026-06-18 17:07:49.414000",
+    },
+    "initial_outreach1_3eecxy9dblhatrhm": {
+        "name": "initial_outreach1",
         "type": "text",
         "content": {
             "body": {
-                "text": "Hi {{name}}, your interview for {{role}} at {{company}} is confirmed on {{date}} at {{time}}."
-            }
+                "text": "Hi {{1}},\r\nThis is {{2}} from {{3}}.\r\nI came across your profile and we currently have a {{4}} opportunity with {{5}} based in {{6}}.\r\nYour background looked relevant, so I wanted to reach out.\r\nWould it be okay if I shared a few details about the role?"
+            },
+            "buttons": {
+                "buttons": [
+                    {"type": "QUICK_REPLY", "text": "Yes, sure"},
+                    {"type": "QUICK_REPLY", "text": "Tell me more"},
+                    {"type": "QUICK_REPLY", "text": "Not interested"},
+                ]
+            },
         },
+        "route": "promotional",
+        "status": "APPROVED",
+        "waba_id": "1007707438414877",
+        "quality": "UNKNOWN",
+        "created_at": "2026-06-18 17:03:08.197000",
     },
 }
 
@@ -75,16 +155,20 @@ def render_template(template_id: Any, sample: Any) -> str | None:
     if mapping is None:
         return None
 
-    text = str(mapping.get("content", {}).get("body", {}).get("text") or "")
+    content = mapping.get("content") or {}
+    body = content.get("body") or {}
+    text = str(body.get("text") or "")
     if not text:
         return None
 
     replacements = _template_replacements(text, sample)
     rendered = _PLACEHOLDER_PATTERN.sub(lambda match: replacements.get(match.group(1), match.group(0)), text)
+    rendered = rendered.replace("\r\n", "\n")
 
-    label = str(mapping.get("label") or "").strip()
-    if label:
-        return f"{label} : {rendered}"
+    buttons = (content.get("buttons") or {}).get("buttons") or []
+    button_texts = [str(button.get("text")) for button in buttons if isinstance(button, dict) and button.get("text")]
+    if button_texts:
+        rendered = f"{rendered} [Options: {' | '.join(button_texts)}]"
     return rendered
 
 

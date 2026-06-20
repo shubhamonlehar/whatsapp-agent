@@ -163,6 +163,7 @@ function Shell() {
           </div>
           <div className="flex items-center gap-3">
             <div className="rounded-md bg-white/10 px-3 py-1 text-xs">TrustSignal-compatible</div>
+            <LlmActions />
             <button
               type="button"
               onClick={() => { clearToken(); window.location.assign('/login'); }}
@@ -181,7 +182,6 @@ function Shell() {
               {label}
             </NavLink>
           ))}
-          <LlmActions />
         </aside>
         <main>
           <Routes>
@@ -212,6 +212,17 @@ function parseError(error: unknown): string {
 function LlmActions() {
   const [busy, setBusy] = React.useState<'' | 'clear' | 'download'>('');
   const [message, setMessage] = React.useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
+  const [open, setOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onClick = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open]);
 
   const clearCache = async () => {
     if (!window.confirm('Clear the LLM fixture cache? This deletes all recorded fixtures.')) return;
@@ -248,29 +259,40 @@ function LlmActions() {
   };
 
   return (
-    <div className="mt-4 rounded-lg border border-line bg-white p-3 shadow-soft">
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">LLM Actions</h2>
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={clearCache}
-          disabled={busy !== ''}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
-        >
-          <Trash2 size={15} />{busy === 'clear' ? 'Clearing…' : 'Clear Cache'}
-        </button>
-        <button
-          type="button"
-          onClick={downloadCache}
-          disabled={busy !== ''}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-mint px-3 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-60"
-        >
-          <Download size={15} />{busy === 'download' ? 'Downloading…' : 'Download Cache'}
-        </button>
-      </div>
-      {message && (
-        <div className={`mt-2 rounded-md px-3 py-2 text-xs font-medium ${message.tone === 'ok' ? 'bg-emerald-50 text-mint' : 'bg-red-50 text-coral'}`}>
-          {message.text}
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-1 text-xs font-medium hover:bg-white/20"
+      >
+        <Webhook size={14} />LLM Action
+      </button>
+      {open && (
+        <div className="absolute right-0 z-50 mt-2 w-60 rounded-lg border border-line bg-white p-3 text-ink shadow-soft">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">LLM Actions</h2>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={clearCache}
+              disabled={busy !== ''}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
+            >
+              <Trash2 size={15} />{busy === 'clear' ? 'Clearing…' : 'Clear Cache'}
+            </button>
+            <button
+              type="button"
+              onClick={downloadCache}
+              disabled={busy !== ''}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-mint px-3 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-60"
+            >
+              <Download size={15} />{busy === 'download' ? 'Downloading…' : 'Download Cache'}
+            </button>
+          </div>
+          {message && (
+            <div className={`mt-2 rounded-md px-3 py-2 text-xs font-medium ${message.tone === 'ok' ? 'bg-emerald-50 text-mint' : 'bg-red-50 text-coral'}`}>
+              {message.text}
+            </div>
+          )}
         </div>
       )}
     </div>

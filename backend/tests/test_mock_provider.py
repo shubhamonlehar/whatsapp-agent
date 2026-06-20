@@ -98,13 +98,13 @@ def test_mock_api_timestamps_are_serialized_in_india_time() -> None:
     assert recent[0]["created_at"].endswith("+05:30")
 
 
-def test_template_id_renders_preview_from_mapping() -> None:
+def test_template_without_buttons_renders_preview_from_mapping() -> None:
     payload = {
         "body": {
             "sender": "9810330589",
             "to": "919100000123",
-            "template_id": "candidate_cv_reqquest_18bva1mbdlo8c907",
-            "sample": {"bodyvar": ["Ravi", "Software Engineer", "Noida"]},
+            "template_id": "current_ctc_e9a89qk8qptpa58q",
+            "sample": {},
         }
     }
     response = client.post("/api/v1/whatsapp/single?api_key=test-api-key", json=payload)
@@ -113,17 +113,17 @@ def test_template_id_renders_preview_from_mapping() -> None:
     messages = client.get("/mock/messages").json()
     stored = next(message for message in messages if message["to_phone"] == "919100000123")
     assert stored["rendered_preview"] == (
-        "Candidate CV Request Template : Hi Ravi, thanks for your interest in the Software Engineer role at Noida."
+        "What is your current CTC?\n(Approximate figure is perfectly fine.)\nExample: ₹18 LPA"
     )
 
 
-def test_received_duplicate_interview_reminder_template_id_renders_preview() -> None:
+def test_template_with_buttons_renders_options_suffix() -> None:
     payload = {
         "body": {
             "sender": "9810330589",
             "to": "919100000124",
-            "template_id": "duplicate_interview_reminder_yeaygobldbvb2m1z",
-            "sample": {"bodyvar": ["Priyanka", "Software Engineer", "Myna"]},
+            "template_id": "initial_outreach1_3eecxy9dblhatrhm",
+            "sample": {"bodyvar": ["Ravi", "Anita", "Acme Corp", "Backend Engineer", "Globex", "Pune"]},
         }
     }
     response = client.post("/api/v1/whatsapp/single?api_key=test-api-key", json=payload)
@@ -132,7 +132,12 @@ def test_received_duplicate_interview_reminder_template_id_renders_preview() -> 
     messages = client.get("/mock/messages").json()
     stored = next(message for message in messages if message["to_phone"] == "919100000124")
     assert stored["rendered_preview"] == (
-        "Hi Priyanka, a quick reminder - your interview for Software Engineer at Myna starts in 30 minutes."
+        "Hi Ravi,\n"
+        "This is Anita from Acme Corp.\n"
+        "I came across your profile and we currently have a Backend Engineer opportunity with Globex based in Pune.\n"
+        "Your background looked relevant, so I wanted to reach out.\n"
+        "Would it be okay if I shared a few details about the role? "
+        "[Options: Yes, sure | Tell me more | Not interested]"
     )
 
 
